@@ -16,19 +16,32 @@
 (define (esOperador? expr)
   (match expr ['+ #t]['- #t]['* #t]['/ #t] ['expt #t] ['modulo #t]['add1 #t] ['sub1 #t] [else #f]))
 
+;;funcion que elimina las expresiones with semanticamente y las vuelve azucar sintactica
+;; FWAE -> FWAE
+(define (multi-with ligaduras cuerpo)
+  (if (= 1 (length ligaduras))
+      (with ligaduras (parse cuerpo))
+      (multi-with (with (list (car ligaduras)) (with* (cdr ligaduras) cuerpo)))))
+
 (define (parse sexp)
   (match sexp
     ;;caso id
     [(? symbol?) (id sexp)]
     ;;caso numero
     [(? number?) (num sexp)]
-    ;; caso with con desugar sintactica
+    ;; caso with quitando el azucar sintactica
     [(list 'with l body)
-     (with (map (lambda (x) (binding (car x) (parse (second x)) )) l) (parse body))]
+     (app (fun (map (lambda (x) (binding-id x)) l) body)
+          (map (lambda (x) (second x)) l))]
     ;;caso if0
     [(list 'if0 cond then else)
      (if0 (parse cond) (parse then) (parse else))]
     [(list 'with* l body)
-     (with* (map (lambda (x) (binding (car x) (parse (second x)) )) l) (parse body))]
-    [(? list?) (op (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))]
+     (parse (multi-with sexp))]
+    ;;caso lista
+    [(cons x xs)
+     (if (esOperador? x)
+         (op (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))
+         (app* x (map (lambda (w) (parse w)) xs))
+         )]
     [_ (error "Sintaxis Incorrecta")]))
