@@ -23,6 +23,12 @@
       (with ligaduras (parse cuerpo))
       (multi-with (with (list (car ligaduras)) (with* (cdr ligaduras) cuerpo)))))
 
+;; funcion que saca identificadores
+(define (get-id exp)
+  (match exp
+    [(app* id body) id]
+    [(binding id valor) (binding-id exp)]))
+
 (define (parse sexp)
   (match sexp
     ;;caso id
@@ -31,8 +37,8 @@
     [(? number?) (num sexp)]
     ;; caso with quitando el azucar sintactica
     [(list 'with l body)
-     (app (fun (map (lambda (x) (binding-id x)) l) body)
-          (map (lambda (x) (second x)) l))]
+     (app (fun (map (lambda (x) (get-id (parse x)) ) l) (parse body))
+          (map (lambda (x) (parse (second x))) l) )]
     ;;caso if0
     [(list 'if0 cond then else)
      (if0 (parse cond) (parse then) (parse else))]
@@ -40,8 +46,7 @@
      (parse (multi-with sexp))]
     ;;caso lista
     [(cons x xs)
-     (if (esOperador? x)
-         (op (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))
-         (app* x (map (lambda (w) (parse w)) xs))
-         )]
+     (cond
+       [(esOperador? x) (op (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))]
+       [else (app* x (map (lambda (w) (parse w)) xs))])]
     [_ (error "Sintaxis Incorrecta")]))
