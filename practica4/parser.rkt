@@ -29,6 +29,8 @@
     [(app* id body) id]
     [(binding id valor) (binding-id exp)]))
 
+(define (ev a) (if (null? a) #f (car a)))
+
 (define (parse sexp)
   (match sexp
     ;;caso id
@@ -37,22 +39,23 @@
     [(? number?) (num sexp)]
     ;; caso with quitando el azucar sintactica
     [(list 'with l body)
-     (app (fun (map (lambda (x) (get-id (parse x)) ) l) (parse body))
+     (app (fun (map (lambda (x) (get-id (parse x))) l) (parse body))
           (map (lambda (x) (parse (second x))) l) )]
     ;;caso if0
     [(list 'if0 cond then else)
      (if0 (parse cond) (parse then) (parse else))]
     [(list 'with* l body)
      (parse (multi-with sexp))]
+    [(list 'fun l body)
+     (fun l (parse body))]
     ;;caso lista
     [(cons x xs)
      (cond
+       [(null? xs) (parse x)]
        [(esOperador? x) (op (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))]
-       [(number? x) (cons (parse x) (parse xs))]
+       [(number? x) (cons (parse x) (parse xs))]  
        [else (app* x (if (CFWAE? (parse (car xs))) (list (parse (car xs))) (parse (car xs))))]
 
        ;;  (map (lambda (x) (parse x))
        )]
-
-     
     [_ sexp]))
