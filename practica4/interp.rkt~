@@ -30,11 +30,10 @@
 ;; evalua la condicion del if0
 (define (eval-cond cond ds)
   (let ([valor (interp cond ds)])
-    (if (numV? valor)
-        (if (zero? (numV-n valor)) #t #f)
-        (error "interp: Símbolo no esperado la condicional de if0, no es un número"))))
+    (if (zero? (numV-n valor))
+        #t
+        #f)))
 
-;;"interp: Símbolo no esperado la condicional de if0, no es un número"
 (define (create-env params args env)
   (match params
     ['() env]

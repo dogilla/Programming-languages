@@ -20,8 +20,11 @@
 ;; FWAE -> FWAE
 (define (multi-with ligaduras cuerpo)
   (if (= 1 (length ligaduras))
-      (with ligaduras (parse cuerpo))
-      (multi-with (with (list (car ligaduras)) (with* (cdr ligaduras) cuerpo)))))
+      (parse (with ligaduras (parse cuerpo)))
+      (parse (with (list (car ligaduras)) (with* (parse-with-body ligaduras) cuerpo)))))
+
+(define (parse-with-body l)
+  (map (lambda (x) (binding (car x) (parse (second x)))) l))
 
 ;; funcion que saca identificadores
 (define (get-id exp)
@@ -45,7 +48,7 @@
     [(list 'if0 cond then else)
      (if0 (parse cond) (parse then) (parse else))]
     [(list 'with* l body)
-     (parse (multi-with sexp))]
+     (multi-with l body)]
     [(list 'fun l body)
      (fun l (parse body))]
     ;;caso lista
