@@ -21,7 +21,7 @@
 (define (multi-with ligaduras cuerpo)
   (if (= 1 (length ligaduras))
       (parse (with ligaduras (parse cuerpo)))
-      (parse (with (list (car ligaduras)) (with* (parse-with-body ligaduras) cuerpo)))))
+      (parse (with (list (car ligaduras)) (with* (parse-with-body ligaduras) (parse cuerpo))))))
 
 (define (parse-with-body l)
   (map (lambda (x) (binding (car x) (parse (second x)))) l))
