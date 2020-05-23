@@ -48,5 +48,11 @@
     [(cons x xs)
      (cond
        [(esOperador? x) (op (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))]
-       [else (app* x (map (lambda (w) (parse w)) xs))])]
-    [_ (error "Sintaxis Incorrecta")]))
+       [(number? x) (cons (parse x) (parse xs))]
+       [else (app* x (if (CFWAE? (parse (car xs))) (list (parse (car xs))) (parse (car xs))))]
+
+       ;;  (map (lambda (x) (parse x))
+       )]
+
+     
+    [_ sexp]))
