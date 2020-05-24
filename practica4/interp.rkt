@@ -41,9 +41,7 @@
     [(cons x xs)
      (cond
        [(empty? args) error 'create-env "Missing arguments"]
-       [else (create-env xs (cdr args) (aSub x (car args) env))
-
-             ])]))
+       [else (create-env xs (cdr args) (aSub x (car args) env))])]))
 
 ;; Toma un árbol de sintáxis abstraca del lenguaje CFWAE, un caché de
 ;; sustituciones y lo interpreta dependiendo de las definiciones dentro del caché,

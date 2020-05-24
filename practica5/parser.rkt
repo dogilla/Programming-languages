@@ -46,4 +46,4 @@
     [(list 'app f args)
      (appS (parse f) (map parse args))]
     [(cons x xs)
-     [(esOperador? x) (op (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))]]))
+     [(esOperador? x) (opS (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))]]))
