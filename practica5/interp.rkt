@@ -10,7 +10,7 @@
 ;; (define (lookup name ds)
 (define (lookup name ds)
   (match ds
-    [(mtSub) (error "lookup: Hay un identificador libre: x")]
+    [(mtSub) (error "lookup: Hay un identificador libre")]
     [(aSub n value ds) (if (equal? name n)
                            value
                            (lookup name ds))]))
@@ -25,10 +25,16 @@
 (define (interp-lista lista ds)
   (map (lambda (x) (if (CFWBAE? x) x (interp x ds))) lista))
 
+;; funcion que evalua la lista de valores de una operacion
 (define (saca-valor lista ambiente)
   (let ([value (interp (car lista) ambiente)] [list-of-value (map (lambda (x) (interp x ambiente)) lista)])
     (cond
-      [(numV? value) (map numV-n list-of-value)]
+      [(numV? value) (map (lambda (z) (if (numV? z)
+                                          (numV-n z)
+                                          (error "No se puede operar booleanos con numeros"))) list-of-value)]
+      [(boolV? value)(map (lambda (z) (if (boolV? z)
+                                          (boolV-b z)
+                                          (error "No se puede operar booleanos con numeros"))) list-of-value)]
       ;;interpreta los valores hasta obtener un numV
       [else (saca-valor (interp-lista list-of-value ambiente) ambiente)])))
 
@@ -56,7 +62,11 @@
     [iF (c then else)
         (if (eval-cond c ds) (interp then ds) (interp else ds))]
     [op (f a)
-        (numV (foldr f 0 (saca-valor a ds)))]
+        (let ([lista (saca-valor a ds)])
+          (if (numV? (car lista))
+              (numV (foldr f 0 lista))
+              (boolV (foldr f lista))))]
+       
     [fun (lista body)
          (closure lista body ds) ]
     [app (fun-expr argumentos)

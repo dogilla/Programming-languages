@@ -3,8 +3,8 @@
 
 (define (simbolo s)
   (cond
-    [(equal? s 'true) (bool #t)]
-    [(equal? s 'false) (bool #f)]
+    [(equal? s 'true) (boolS #t)]
+    [(equal? s 'false) (boolS #f)]
     [else (idS s)]))
 
 
@@ -15,9 +15,20 @@
 
 (define (opera expr)
   (match expr ['+ +]['- -]['* *]['/ /] ['expt (λ elem (foldr expt (car elem) (cdr elem)))]
-                                        ['modulo modulo]['add1 add1] ['sub1 sub1] [else (error "NO")]))
-(define (esOperador? expr)
+              ['modulo modulo] ['add1 add1] ['< <] ['<= <=] ['= equal?] ['not not]
+              ['and (and)] ['or (or)] ['sub1 sub1] ['zero? zero?] [else (error "Operación fuera del lenguaje")]))
+
+;;funcion que nos dice si es opedador de numeros
+(define (esOperadorn? expr)
   (match expr ['+ #t]['- #t]['* #t]['/ #t] ['expt #t] ['modulo #t]['add1 #t] ['sub1 #t] [else #f]))
+
+;; funcion que nos dice si es operado de booleanos
+(define (esOperadorb? expr)
+  (match expr
+    ['modulo #t] ['add1 #t] ['< #t] ['<= #t] ['= #t] ['not #t] ['and #t] ['or #t] ['sub1 #t] ['zero? #t] [else #f]))
+
+
+;;     [app* (id argumentos) (interp (app (lookup id ds) argumentos) ds)]
 
 ;; Toma una lista de números, symbolos o listas
 ;; y la traduce a un árbol de sintaxis abstracta CFWBAE
@@ -46,4 +57,5 @@
     [(list 'app f args)
      (appS (parse f) (map parse args))]
     [(cons x xs)
-     [(esOperador? x) (opS (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))]]))
+     (cond  [(or (esOperadorb? x) (esOperadorn? x)) (opS (opera x) (map (lambda (w) (parse w)) xs))])
+     ]))
