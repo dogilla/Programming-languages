@@ -57,8 +57,5 @@
        [(null? xs) (parse x)]
        [(esOperador? x) (op (opera (first sexp))  (map (lambda (x) (parse x)) (cdr sexp)))]
        [(number? x) (cons (parse x) (parse xs))]  
-       [else (app* x (if (CFWAE? (parse (car xs))) (list (parse (car xs))) (parse (car xs))))]
-
-       ;;  (map (lambda (x) (parse x))
-       )]
+       [else (app* x (if (CFWAE? (parse (car xs))) (list (parse (car xs))) (parse (car xs))))])]
     [_ sexp]))

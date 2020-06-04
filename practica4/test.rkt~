@@ -16,9 +16,9 @@
 
 
 (test (prueba '{with {{x 3}}
-                      {with {{f {fun {y} {+ x y}}}}
-                             {with {{x 4}}
-                                    {f {1}}}}}) (numV 5)) 
+                      {with* {{f {fun {y} {+ x y}}}}
+                             {with* {{x 4}}
+                                    {f {1}}}}}) (numV 4)) 
 
 (test (prueba '{with {{x 5} {y 1}} {+ x y}}) (numV 6))
 
