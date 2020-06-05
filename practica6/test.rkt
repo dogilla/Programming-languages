@@ -8,3 +8,5 @@ _
 
 _
 
+(parse '{fun {(x : number)} : number {+ x x}})
+
