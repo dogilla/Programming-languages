@@ -2,15 +2,26 @@
 (require (file "./grammars.rkt"))
 (require (file "./parser.rkt"))
 
-;; predicado que nos dice si una expresión es booleana, si es falso significa que
-;; es numerica, error en otro caso.
-(define (fun-booleana? expr)
-  (match expr
-    [+ #f][- #f][* #f][/ #f] [expt #f]
-    [modulo #f] [add1 #f] [< #t] [<= #t] ['= equal?] ['not not]
-    ['and and]
-    ['or or]
-    ['sub1 sub1] ['zero? zero?] [else (error "Operación fuera del lenguaje")]))
+;; predicado que nos dice si el tipo del que deberia ser un procedimiento
+;; en una operación
+
+(define (type-fun fun)
+  (cond
+    [(equal? fun +) (numberT)]
+    [(equal? fun -) (numberT)]
+    [(equal? fun *) (numberT)]
+    [(equal? fun /) (numberT)]
+    [(equal? fun sub1) (numberT)]
+    [(equal? fun zero?) (numberT)]
+    [(equal? fun expt) (numberT)]
+    [(equal? fun modulo) (numberT)]
+    [(equal? fun add1) (numberT)]
+    [(equal? fun <) (numberT)]
+    [(equal? fun <=) (numberT)]
+    [(equal? fun equal?) (numberT)]
+    [(equal? fun and) (booleanT)]
+    [(equal? fun or) (booleanT)]
+    [(equal? fun not) (booleanT)]))
 
 ;; busca el tipo de un id
 (define lookup-type
@@ -32,6 +43,24 @@
         tipo
         (error "Las condiciones de if deben ser del mismo tipo"))))
 
+;; regresa una lista con los tipos de las condicionales de un CondS
+(define (type-cond c)
+  (cond
+    [(condition? c) (if (booleanT? (typeof (condition-test-expr c)))
+                        (typeof (condition-then-expr c))
+                        (error "Las condiciones de cond deber ser booleanas"))]
+    [(else-cond? c) (typeof (else-cond-else-expr c))]))
+
+;; listof(type) -> type
+(define (principal-cond-type lst)
+  (if (= (length lst) 1)
+      (car lst)
+      (if (equal? (car lst) (principal-cond-type (cdr lst)))
+          (car lst)
+          (error "Las expresiones de una condicion deben tener el mismo tipo"))))
+
+;; reviza que todos los elementos de una lista tengan el mismo tipo y
+;; lo devuelve si en efecto son iguales
 (define get-type-of-list
   (case-lambda
     [(l context)
@@ -43,15 +72,8 @@
          tipo
          (if (equal? tipo (typeof (car l) context))
              (get-type-of-list (cdr l) tipo context)
-             (error "Type Error")))]))
+             (error "Type Error: Argumentos de difente tipo")))]))
 
-
-(define (op-numerica l)
-  (if (empty? l)
-      (numberT)
-      (if (number? (car l))
-          (op-numerica (cdr l))
-          (error "Los argumentos de la operacion deben ser numeros"))))
 
 ;; Toma un Árbol de sintaxis abstracta CFWBAE y obtiene el tipo
 ;; de la expresión mínima.
@@ -62,34 +84,28 @@
     [idS (i)
          (lookup-type expr context)]
     [boolS (b)
-         (booleanT b)]
+         (booleanT)]
     [numS (n)
-         (numberT n)]
+         (numberT)]
     [iFS (cond else then)
          (if (booleanT? (typeof cond context))
              (type-conditions then else)
              (error "La condicion de if debe ser booleana"))]
     [opS (f args)
-         ()]
+         (let [(tipo (get-type-of-list args context))]
+           (if (equal? (type-fun f) tipo)
+               tipo
+               (error "Type Error: El procedimiento de la funcion no coincide con el sus argumentos")))]
     [condS (cases)
-         ()]
+           (principal-cond-type (map type-cond cases))]
     [withS (bindings body)
-         ()]
+         body]
     [withS* (bindings body)
-          ()]
+          body]
     [funS (p tipo body)
-          ()]
+          body]
     [appS (f args)
-          ()]
-    
-
-
-
-
-    
-
-
-    ))
+          args]))
   
 (define (prueba exp)
   (typeof (parse exp) (phi)))
