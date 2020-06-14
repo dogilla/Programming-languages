@@ -7,34 +7,38 @@
 
 (define (type-fun fun)
   (cond
-    [(equal? fun +) (numberT)]
-    [(equal? fun -) (numberT)]
-    [(equal? fun *) (numberT)]
-    [(equal? fun /) (numberT)]
-    [(equal? fun sub1) (numberT)]
-    [(equal? fun zero?) (numberT)]
-    [(equal? fun expt) (numberT)]
-    [(equal? fun modulo) (numberT)]
-    [(equal? fun add1) (numberT)]
-    [(equal? fun <) (numberT)]
-    [(equal? fun <=) (numberT)]
-    [(equal? fun equal?) (numberT)]
     [(equal? fun and) (booleanT)]
     [(equal? fun or) (booleanT)]
-    [(equal? fun not) (booleanT)]))
+    [(equal? fun not) (booleanT)]
+    [else (numberT)]))
 
-;; busca el tipo de un id
+;; busca el tipo de un id en el contexto
 (define lookup-type
   (lambda (id
            context)
     (cond
-      [(empty? context) 
-       (error id "Indentificador sin tipo especificado: ")]
+      [(phi? context) 
+       (error  "Identificador sin tipo especificado: " (idS-i id))]
       
-      [(symbol=? id (gamma-id (first context)))
-       (first context)]
+      [(symbol=? (idS-i id) (gamma-id context))
+       (gamma-tipo context)]
       
-      [else (lookup-type id (rest context))])))
+      [else (lookup-type id (gamma-rest context))])))
+
+;; crea un contexto a partir de una lista de ligaduras
+(define (context-from-bindigs b context)
+  (if (empty? b)
+      context
+      (context-from-bindigs (cdr b)
+                            (expand-context context
+                                            (binding-id (car b))
+                                            (binding-tipo (car b))))))
+
+;;expande un contexto
+(define (expand-context context id tipo)
+  (if (phi? context)
+      (gamma id tipo (phi))
+      (gamma id tipo context)))
 
 ;; reviza el tipo de ambas condiciones de un if o cond
 (define (type-conditions then else context)
@@ -74,6 +78,26 @@
              (get-type-of-list (cdr l) tipo context)
              (error "Type Error: Argumentos de difente tipo")))]))
 
+;; crea una lista de tipos a partir de los parametros de una funcion
+(define (create-list-type params)
+   (map (lambda (x) (param-tipo x)) params))
+
+(define (check-params p context)
+  (if (empty? p)
+      #t
+      (if (equal? (binding-tipo (car p)) (typeof (binding-value (car p)) context))
+          (check-params (cdr p) context)
+          (error "los parametros de un with o with* deben ser del mismo al declarado"))))
+
+;; crea un contexto a partir de la lista de parametros de una funcion
+(define (create-context-from-params params context)
+  (if (empty? params)
+      context
+      (create-context-from-params (cdr params)
+                            (expand-context context
+                                            (param-param (car params))
+                                            (param-tipo (car params))))))
+
 
 ;; Toma un Árbol de sintaxis abstracta CFWBAE y obtiene el tipo
 ;; de la expresión mínima.
@@ -98,14 +122,25 @@
                (error "Type Error: El procedimiento de la funcion no coincide con el sus argumentos")))]
     [condS (cases)
            (principal-cond-type (map type-cond cases))]
-    [withS (bindings body)
-         body]
-    [withS* (bindings body)
-          body]
     [funS (p tipo body)
-          body]
+          (if (equal? tipo (typeof body (create-context-from-params p context)))
+              (funT (append (create-list-type p) (list tipo)))
+              (error "el cuerpo de la funcion no corresponde con su tipo esperado"))]
+    [withS (bindings body)
+           (if (check-params bindings context)
+               (typeof body (context-from-bindigs bindings context))
+               (error "los parametros de un with o with* deben ser del mismo al declarado")) ]
+    [withS* (bindings body)
+            (if (check-params bindings context)
+               (typeof body (context-from-bindigs bindings context))
+               (error "los parametros de un with o with* deben ser del mismo al declarado"))]
     [appS (f args)
-          args]))
+          (if (funT? (typeof f context))
+              (if (equal? (create-list-type (funS-params f)) (map (lambda (x) (typeof x context)) args))
+                  (typeof f context)
+                  (error "los argumentos de la aplicación no coinciden con los declarados en la función"))
+              ;;(typeof args (create-context-from-params (funS-params f) context))
+              (error "La expresión izquierda de una aplicación debe ser una función"))]))
   
 (define (prueba exp)
   (typeof (parse exp) (phi)))
